@@ -34,6 +34,7 @@ A Next.js clothing storefront with a MongoDB Atlas catalog, persistent guest car
 ## Features
 
 - Product catalog, category filters, search, and product detail pages.
+- If MongoDB is temporarily unreachable, the homepage shows a clearly labeled, read-only starter catalog; shopping remains disabled until the database reconnects.
 - Guest carts stored in MongoDB and tied to a signed, HTTP-only cookie.
 - Order creation validates current product availability, server-side prices, and stock inside a MongoDB transaction. Stock is decremented and the cart cleared atomically.
 - Order confirmation displays a reference and item totals without exposing customer delivery details.
