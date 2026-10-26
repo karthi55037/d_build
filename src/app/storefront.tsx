@@ -25,13 +25,19 @@ async function readResponse<T>(response: Response): Promise<T> {
   return body as T;
 }
 
-export default function Storefront({ products }: { products: Product[] }) {
+export default function Storefront({
+  products,
+  readOnly = false,
+}: {
+  products: Product[];
+  readOnly?: boolean;
+}) {
   const [cart, setCart] = useState<Cart>(emptyCart);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [cartReady, setCartReady] = useState(false);
+  const [cartReady, setCartReady] = useState(readOnly);
   const [error, setError] = useState("");
   const [order, setOrder] = useState<Order | null>(null);
 
@@ -46,6 +52,9 @@ export default function Storefront({ products }: { products: Product[] }) {
   const count = cart.items.reduce((total, item) => total + item.quantity, 0);
 
   useEffect(() => {
+    if (readOnly) {
+      return;
+    }
     void fetch("/api/cart", { cache: "no-store" })
       .then((response) => readResponse<Cart>(response))
       .then((value) => {
@@ -56,7 +65,7 @@ export default function Storefront({ products }: { products: Product[] }) {
         setError(cause instanceof Error ? cause.message : "Unable to load your cart.");
         setCartReady(true);
       });
-  }, []);
+  }, [readOnly]);
 
   async function updateCart(product: Product, quantity: number) {
     setBusy(true);
@@ -103,6 +112,11 @@ export default function Storefront({ products }: { products: Product[] }) {
       <div className="bg-black py-2 text-center text-xs tracking-widest text-white">
         FREE SHIPPING ON ORDERS OVER ₹1,999
       </div>
+      {readOnly && (
+        <p role="status" className="bg-amber-100 px-4 py-3 text-center text-sm text-amber-950">
+          Preview catalog: MongoDB is unreachable, so shopping is temporarily unavailable.
+        </p>
+      )}
 
       <header className="sticky top-0 z-20 flex items-center justify-between border-b bg-[#faf9f6] px-5 py-5 md:px-12">
         <Link href="/" className="text-2xl font-black tracking-tighter">
@@ -123,9 +137,9 @@ export default function Storefront({ products }: { products: Product[] }) {
               className="w-20 bg-transparent text-sm outline-none sm:w-28"
             />
           </label>
-          <button onClick={() => setCartOpen(true)} className="flex items-center gap-2" aria-label={`Open bag, ${count} items`}>
+          <button onClick={() => setCartOpen(true)} disabled={readOnly} className="flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60" aria-label={`Open bag, ${count} items`}>
             <ShoppingBag size={21} aria-hidden="true" />
-            <span className="text-sm">Bag ({count})</span>
+            <span className="text-sm">{readOnly ? "Bag unavailable" : `Bag (${count})`}</span>
           </button>
         </div>
       </header>
@@ -181,7 +195,7 @@ export default function Storefront({ products }: { products: Product[] }) {
           {filtered.map((product) => (
             <article key={product.id} className="group">
               <div className="relative aspect-[3/4] overflow-hidden bg-neutral-200">
-                <Link href={`/products/${product.slug}`} aria-label={`View ${product.name}`}>
+                <Link href={readOnly ? "#shop" : `/products/${product.slug}`} aria-label={`View ${product.name}`}>
                   <Image
                     src={product.image}
                     alt={product.name}
@@ -191,19 +205,19 @@ export default function Storefront({ products }: { products: Product[] }) {
                   />
                 </Link>
                 <button
-                  disabled={busy || !cartReady || product.stock === 0}
+                  disabled={readOnly || busy || !cartReady || product.stock === 0}
                   onClick={() => updateCart(
                     product,
                     (cart.items.find((item) => item.product.id === product.id)?.quantity ?? 0) + 1,
                   )}
                   className="absolute bottom-3 left-3 right-3 flex items-center justify-center gap-2 bg-white py-3 text-sm hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <Plus size={16} aria-hidden="true" /> {product.stock === 0 ? "Sold out" : "Add to bag"}
+                  <Plus size={16} aria-hidden="true" /> {readOnly ? "Preview only" : product.stock === 0 ? "Sold out" : "Add to bag"}
                 </button>
               </div>
               <div className="flex justify-between gap-2 pt-4">
                 <div>
-                  <Link href={`/products/${product.slug}`} className="text-sm font-medium hover:underline">{product.name}</Link>
+                  <Link href={readOnly ? "#shop" : `/products/${product.slug}`} className="text-sm font-medium hover:underline">{product.name}</Link>
                   <p className="mt-1 text-xs text-neutral-500">{product.category}</p>
                 </div>
                 <span className="shrink-0 text-sm">{money(product.price)}</span>

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { listProducts } from "@/lib/store";
+import { MongoServerSelectionError } from "mongodb";
+import { getPreviewProducts, listProducts, type Product } from "@/lib/store";
 import Storefront from "@/app/storefront";
 
 export default function Home() {
@@ -13,6 +14,17 @@ export default function Home() {
 
 async function StorefrontPage() {
   await connection();
-  const products = await listProducts();
-  return <Storefront products={products} />;
+  let products: Product[];
+  let readOnly = false;
+  try {
+    products = await listProducts();
+  } catch (error) {
+    if (!(error instanceof MongoServerSelectionError)) {
+      throw error;
+    }
+    console.error("MongoDB is unavailable; showing the read-only catalog preview.", error);
+    products = getPreviewProducts();
+    readOnly = true;
+  }
+  return <Storefront products={products} readOnly={readOnly} />;
 }

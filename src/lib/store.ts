@@ -76,6 +76,10 @@ const starterProducts: ProductInput[] = [
   { name: "Premium Sweatshirt", slug: "premium-sweatshirt", category: "Hoodies", price: 1399, stock: 12, image: "https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=600&q=80", description: "A soft sweatshirt that makes layering simple." },
 ];
 
+export function getPreviewProducts(): Product[] {
+  return starterProducts.map((product) => ({ ...product, id: product.slug }));
+}
+
 let initialization: Promise<void> | undefined;
 
 async function getCollections() {
